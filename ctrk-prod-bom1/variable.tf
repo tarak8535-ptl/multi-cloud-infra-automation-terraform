@@ -69,3 +69,39 @@ variable "single_nat_gateway" {
   type        = bool
   default     = true
 }
+
+variable "resource_prefix" {
+  description = "Prefix for resource names"
+  type        = string
+  default     = "ctrk-prod"
+}
+
+variable "enable_secondary_cidr" {
+  description = "Enable secondary CIDR for VPC"
+  type        = bool
+  default     = false
+}
+
+variable "secondary_cidr" {
+  description = "Secondary CIDR block for VPC"
+  type        = string
+  default     = ""
+}
+
+variable "log_retention_days" {
+  description = "Number of days to retain logs"
+  type        = number
+  default     = 90
+}
+
+variable "kms_key_id" {
+  description = "KMS key ID for encryption"
+  type        = string
+  default     = ""
+}
+
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
+}
