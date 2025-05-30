@@ -35,6 +35,7 @@ variable "ami_id" {
 variable "key_name" {
   description = "SSH key name for EC2 instances"
   type        = string
+  default     = null
 }
 
 variable "project_name" {

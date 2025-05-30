@@ -13,8 +13,13 @@ resource "aws_instance" "app" {
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id != null ? var.subnet_id : var.public_subnet_ids[0]
   vpc_security_group_ids = [var.security_group_id]
-  key_name               = var.key_name
+  key_name               = var.key_name != null && var.key_name != "" ? var.key_name : null
   iam_instance_profile   = var.iam_instance_profile
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
 
   user_data = var.user_data != null ? var.user_data : <<-EOF
               #!/bin/bash
