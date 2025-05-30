@@ -1,0 +1,215 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2.3.9
+        with:
+          config-path: .github/gitleaks.toml
+          redact-findings: true
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.12.1
+
+      - name: Validate ctrk-dev-bom1
+        run: |
+          cd ctrk-dev-bom1
+          rm -f s3backend.tf
+          terraform init
+          terraform validate
+          terraform fmt --check --diff
+          cd ..
+
+      - name: Validate ctrk-prod-bom1
+        run: |
+          cd ctrk-prod-bom1
+          rm -f s3backend.tf
+          terraform init
+          terraform validate
+          terraform fmt --check --diff
+          cd ..
+
+  plan-dev:
+    name: Plan Dev
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ctrk-dev-bom1-plan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.12.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cicd-terraform-security
+          aws-region: ap-south-1
+
+      - name: Terraform Plan
+        run: |
+          cd ctrk-dev-bom1
+          terraform init
+          terraform validate
+          terraform plan -out=tfplan
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-tfplan
+          path: ctrk-dev-bom1/tfplan
+
+  plan-prod:
+    name: Plan Prod
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ctrk-prod-bom1-plan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.12.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cicd-terraform-security
+          aws-region: ap-south-1
+
+      - name: Terraform Plan
+        run: |
+          cd ctrk-prod-bom1
+          terraform init
+          terraform validate
+          terraform plan -out=tfplan
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-tfplan
+          path: ctrk-prod-bom1/tfplan
+
+  deploy-dev:
+    name: Deploy Dev
+    needs: [plan-dev, plan-prod]
+    runs-on: ubuntu-latest
+    environment: ctrk-dev-bom1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.12.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cicd-terraform-deploy
+          aws-region: ap-south-1
+
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: dev-tfplan
+          path: ctrk-dev-bom1
+
+      - name: Terraform Apply
+        run: |
+          cd ctrk-dev-bom1
+          terraform init
+          terraform apply -auto-approve tfplan
+
+  deploy-prod:
+    name: Deploy Prod
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: ctrk-prod-bom1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.12.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cicd-terraform-deploy
+          aws-region: ap-south-1
+
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: prod-tfplan
+          path: ctrk-prod-bom1
+
+      - name: Terraform Apply
+        run: |
+          cd ctrk-prod-bom1
+          terraform init
+          terraform apply -auto-approve tfplan
+
+  deploy-website:
+    name: Deploy Website
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    environment: website-deploy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/cicd-website-deploy
+          aws-region: ap-south-1
+
+      - name: Build website
+        run: |
+          # Add your website build commands here
+          echo "Building website..."
+
+      - name: Deploy to S3
+        run: |
+          # Deploy website to S3 bucket
+          aws s3 sync ./build s3://${{ secrets.WEBSITE_BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          # Invalidate CloudFront cache
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
