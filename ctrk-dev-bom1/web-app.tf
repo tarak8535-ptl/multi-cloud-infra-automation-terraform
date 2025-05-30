@@ -38,15 +38,15 @@ resource "aws_security_group" "web" {
 module "web_server" {
   source = "../modules/ec2"
 
-  vpc_id              = var.vpc_id
-  public_subnet_ids   = var.public_subnet_ids
-  security_group_id   = aws_security_group.web.id
-  instance_type       = "t3.micro"
-  key_name            = null # Using SSM instead of SSH
+  vpc_id               = var.vpc_id
+  public_subnet_ids    = var.public_subnet_ids
+  security_group_id    = aws_security_group.web.id
+  instance_type        = "t3.micro"
+  key_name             = null # Using SSM instead of SSH
   iam_instance_profile = module.ssm_role.instance_profile_name
-  project_name        = "ctrk"
-  environment         = var.environment
-  name                = "web"
+  project_name         = "ctrk"
+  environment          = var.environment
+  name                 = "web"
 
   user_data = <<-EOF
     #!/bin/bash
