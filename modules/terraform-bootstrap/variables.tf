@@ -8,3 +8,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "kms_key_id" {
+  description = "The KMS Key ID to use for encryption."
+  type        = string
+  default     = null
+}
