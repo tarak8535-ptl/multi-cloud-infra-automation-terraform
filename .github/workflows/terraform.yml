@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'dev'
+        default: "dev"
         type: choice
         options:
           - dev
@@ -50,7 +50,6 @@ jobs:
         run: |
           cd ctrk-dev-bom1
           rm -f s3backend.tf
-          cp variable.tf variables.tf
           terraform init
           terraform validate
           terraform fmt --check --diff
@@ -60,7 +59,6 @@ jobs:
         run: |
           cd ctrk-prod-bom1
           rm -f s3backend.tf
-          cp variable.tf variables.tf || true
           terraform init
           terraform validate
           terraform fmt --check --diff
