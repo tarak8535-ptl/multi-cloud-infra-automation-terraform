@@ -1,64 +1,56 @@
 # Multi-Cloud Infrastructure Automation with Terraform
 
-This repository contains Terraform code for deploying and managing multi-environment infrastructure on AWS, with CI/CD integration using GitHub Actions.
+This repository contains Terraform code for deploying and managing secure, multi-environment AWS infrastructure, with CI/CD integration using GitHub Actions and OIDC.
 
-## Architecture
+## Architecture Overview
 
-This project implements a multi-environment infrastructure deployment with:
-
-- GitHub Actions workflow for CI/CD
-- GitHub OIDC integration with AWS for secure authentication
-- S3 website hosting with CloudFront distribution
-- VPC networking with public and private subnets
-- Terraform state management with S3 backend and DynamoDB locking
+- **Modular Terraform**: Each major AWS component is a reusable module (VPC, S3, RDS, EC2, IAM, CloudFront, Route53, etc.)
+- **Multi-Environment**: Separate directories for dev and prod environments (e.g., `ctrk-dev-bom1`, `ctrk-prod-bom1`)
+- **CI/CD**: Automated validation, planning, and deployment using GitHub Actions and OIDC roles
+- **Security**: Encryption, least-privilege IAM, S3 public access block, strong password policies, and logging
 
 ## Environments
 
 - **ctrk-dev-bom1**: Development environment
 - **ctrk-prod-bom1**: Production environment
 
-## GitHub OIDC Integration
+Each environment directory contains its own variable definitions and module instantiations.
 
-This project uses GitHub's OIDC provider to authenticate with AWS without storing long-lived credentials. The workflow assumes different IAM roles based on the environment:
+## Module Structure
 
-- `cicd-terraform-security`: Used for planning changes
-- `cicd-terraform-deploy`: Used for applying infrastructure changes
-- `cicd-website-deploy`: Used for deploying website content
+- **account-defaults**: AWS account-wide security settings (password policy, etc.)
+- **oidc-provider**: GitHub OIDC integration for secure CI/CD
+- **vpc / vpc-secure**: Network infrastructure (public/private/firewall subnets, NAT, IGW)
+- **terraform-bootstrap**: S3 backend and DynamoDB for Terraform state management
+- **ssm-logging**: SSM Session Manager logging to S3/CloudWatch
+- **ssm-role**: IAM roles for SSM access
+- **ec2**: EC2 instance provisioning
+- **security**: Security groups for app and database
+- **rds / redshift / elasticsearch**: Managed database and analytics services
+- **cloudfront**: CDN for static content
+- **acm**: SSL/TLS certificate management
+- **route53**: DNS management
+- **kms**: Key Management Service for encryption
 
 ## Getting Started
 
 1. Fork this repository
-2. Set up the required GitHub secrets:
-   - `AWS_ACCOUNT_ID`: Your AWS account ID
-   - `WEBSITE_BUCKET_NAME`: The S3 bucket name for the website (output from Terraform)
-   - `CLOUDFRONT_DISTRIBUTION_ID`: The CloudFront distribution ID (output from Terraform)
+2. Configure variables in the appropriate `terraform.tfvars` file for your environment
+3. Run `terraform init`, `terraform plan`, and `terraform apply` in the environment directory
 
-3. Run the initial deployment manually to set up the OIDC provider:
+## CI/CD Workflow
 
-```bash
-cd ctrk-dev-bom1
-terraform init
-terraform apply
-```
+- Security scan with Gitleaks
+- Terraform validate, plan, and apply (per environment)
+- Website deployment to S3/CloudFront
+- OIDC roles for secure, short-lived AWS credentials
 
-4. After the initial deployment, the GitHub Actions workflow will handle subsequent deployments.
+## Security Practices
 
-## Workflow
+- S3 buckets encrypted and versioned
+- RDS/Redshift/Elasticsearch encrypted with KMS
+- IAM roles with least privilege
+- VPC with public/private/firewall subnets
+- Logging and monitoring enabled
 
-The GitHub Actions workflow includes the following steps:
-
-1. Security scanning with Gitleaks
-2. Terraform validation
-3. Planning changes for dev and prod environments
-4. Deploying to dev environment
-5. Deploying to prod environment
-6. Deploying website content to S3 and invalidating CloudFront cache
-
-## Module Structure
-
-- **account-defaults**: AWS account settings
-- **oidc-provider**: GitHub OIDC integration
-- **vpc**: Network infrastructure
-- **terraform-bootstrap**: S3 backend and DynamoDB for state management
-- **ssm-logging**: SSM session logging
-- **ssm-role**: IAM roles for SSM
+See `README-security.md` and `docs/architecture.md` for more details.

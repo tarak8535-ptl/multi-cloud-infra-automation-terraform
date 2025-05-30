@@ -1,86 +1,38 @@
 # AWS Security Infrastructure with Terraform
 
-This repository contains Terraform modules for deploying secure AWS infrastructure components.
+This repository provides secure, modular Terraform code for AWS infrastructure, emphasizing best practices for security, compliance, and automation.
 
-## Modules
+## Modules Overview
 
-### Account Defaults
-
-- Enforces strong password policies
-- Configures account contacts and security settings
-
-### Terraform Bootstrap
-
-- Creates S3 bucket for Terraform state with encryption and versioning
-- Sets up DynamoDB table for state locking
-- Enforces TLS for S3 access
-
-### OIDC Provider
-
-- Configures OIDC integration with Bitbucket for CI/CD
-- Creates IAM roles with least privilege permissions
-- Supports custom role definitions
-
-### Secure VPC
-
-- Multi-AZ VPC with public, private, and firewall subnets
-- NAT gateway for outbound internet access
-- Security groups with least privilege access
-
-### SSM Logging
-
-- Session Manager configuration with enhanced security
-- CloudWatch and S3 logging for session activity
-- Log retention policies
+- **Account Defaults**: Enforces strong password policies and account security settings
+- **Terraform Bootstrap**: S3 backend with encryption, versioning, and DynamoDB locking for state
+- **OIDC Provider**: GitHub OIDC integration for secure CI/CD (no long-lived credentials)
+- **VPC Secure**: Multi-AZ VPC with public, private, and firewall subnets, NAT, and security groups
+- **SSM Logging**: Session Manager logging to S3 and CloudWatch, with retention and encryption
+- **SSM Role**: IAM roles for SSM access and patch management
+- **KMS**: Key management for encryption across services
+- **EC2, RDS, Redshift, Elasticsearch, CloudFront, ACM, Route53**: Modular, secure provisioning of AWS services
 
 ## Environment Structure
 
-The repository is organized with separate directories for each environment:
+- **ctrk-dev-bom1**: Development (ap-south-1)
+- **ctrk-prod-bom1**: Production (ap-south-1)
 
-- **ctrk-dev-bom1**: Development environment in us-east-1
-- **ctrk-prod-bom1**: Production environment in us-east-1
-- **ctrk-prod-iad2**: Second production environment in us-east-1
+Each environment is isolated and uses its own state, variables, and resources.
+
+## Security Highlights
+
+- No public database access; private subnets for sensitive resources
+- S3, RDS, Redshift, Elasticsearch encrypted with KMS
+- S3 public access blocked by default
+- IAM roles and policies with least privilege
+- Logging and monitoring enabled for all critical resources
+- OIDC for secure, short-lived AWS credentials in CI/CD
 
 ## Usage
 
-1. Configure variables in `terraform.tfvars`:
+1. Configure variables in `terraform.tfvars` for your environment
+2. Run `terraform init`, `terraform plan`, and `terraform apply`
+3. Use GitHub Actions for automated CI/CD and security scanning
 
-```hcl
-aws_region = "us-east-1"
-resource_prefix = "ctrk-dev"
-is_federated = false
-
-# OIDC Provider
-bitbucket_workspace_name = "your-workspace"
-bitbucket_workspace_uuid = "your-workspace-uuid"
-
-# VPC
-vpc_cidr = "10.0.0.0/16"
-```
-
-2. Initialize Terraform:
-
-```bash
-terraform init
-```
-
-3. Plan the deployment:
-
-```bash
-terraform plan -out=tfplan
-```
-
-4. Apply the changes:
-
-```bash
-terraform apply tfplan
-```
-
-## CI/CD Integration
-
-The Bitbucket Pipelines configuration enables secure CI/CD:
-
-- No long-lived AWS credentials in CI/CD pipelines
-- Short-lived, scoped credentials via OIDC token exchange
-- Repository-specific role permissions
-- Approval gates between environments
+See `README.md` and `docs/architecture.md` for architecture and module usage details.
