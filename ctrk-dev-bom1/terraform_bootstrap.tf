@@ -10,7 +10,8 @@ module "kms" {
 }
 
 module "terraform_bootstrap" {
-  source = "../modules/terraform-bootstrap"
-  prefix = var.resource_prefix
-  tags   = var.tags
+  source     = "../modules/terraform-bootstrap"
+  prefix     = var.resource_prefix
+  tags       = var.tags
+  kms_key_id = module.kms.key_id
 }
