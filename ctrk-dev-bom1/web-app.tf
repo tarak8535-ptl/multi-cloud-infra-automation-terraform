@@ -4,6 +4,7 @@ resource "aws_security_group" "web" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "Allow HTTP traffic"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -11,20 +12,17 @@ resource "aws_security_group" "web" {
   }
 
   ingress {
+    description = "Allow HTTPS traffic"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # Using SSM for instance access instead of SSH
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -40,14 +38,15 @@ resource "aws_security_group" "web" {
 module "web_server" {
   source = "../modules/ec2"
 
-  vpc_id            = var.vpc_id
-  public_subnet_ids = var.public_subnet_ids
-  security_group_id = aws_security_group.web.id
-  instance_type     = "t3.micro"
-  key_name          = var.key_name
-  project_name      = "ctrk"
-  environment       = var.environment
-  name              = "web"
+  vpc_id              = var.vpc_id
+  public_subnet_ids   = var.public_subnet_ids
+  security_group_id   = aws_security_group.web.id
+  instance_type       = "t3.micro"
+  key_name            = null # Using SSM instead of SSH
+  iam_instance_profile = module.ssm_role.instance_profile_name
+  project_name        = "ctrk"
+  environment         = var.environment
+  name                = "web"
 
   user_data = <<-EOF
     #!/bin/bash
@@ -102,11 +101,11 @@ module "web_server" {
 # Use existing Route53 module to create DNS record
 module "dns" {
   source = "../modules/route53"
-  
-  domain_name   = "opsbyhnr.online"
-  project_name  = "ctrk"
-  environment   = var.environment
-  
+
+  domain_name  = "opsbyhnr.online"
+  project_name = "ctrk"
+  environment  = var.environment
+
   records = {
     "rushipatel" = {
       type    = "A"
