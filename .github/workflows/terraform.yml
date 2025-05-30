@@ -5,6 +5,17 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+          - all
 
 permissions:
   id-token: write
@@ -123,6 +134,7 @@ jobs:
   deploy-dev:
     name: Deploy Dev
     needs: [plan-dev, plan-prod]
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'dev' || github.event.inputs.environment == 'all' }}
     runs-on: ubuntu-latest
     environment: ctrk-dev-bom1
     steps:
@@ -155,6 +167,7 @@ jobs:
   deploy-prod:
     name: Deploy Prod
     needs: deploy-dev
+    if: ${{ success() && (github.event_name != 'workflow_dispatch' || github.event.inputs.environment == 'prod' || github.event.inputs.environment == 'all') }}
     runs-on: ubuntu-latest
     environment: ctrk-prod-bom1
     steps:
@@ -187,6 +200,7 @@ jobs:
   deploy-website:
     name: Deploy Website
     needs: deploy-prod
+    if: ${{ success() }}
     runs-on: ubuntu-latest
     environment: website-deploy
     steps:
