@@ -6,7 +6,7 @@ resource "aws_iam_openid_connect_provider" "github" {
   ]
 
   # GitHub's OIDC thumbprints
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+  thumbprint_list = ["d89e3bd43d5d909b47a18977aa9d5ce36cee184c"]
 }
 
 locals {

@@ -3,7 +3,7 @@ resource_prefix = "ctrk-dev"
 environment     = "dev"
 
 # GitHub OIDC
-github_org  = "Rp-Github"
+github_org  = "tarak8535-ptl"
 github_repo = "multi-cloud-infra-automation-terraform"
 
 # VPC
