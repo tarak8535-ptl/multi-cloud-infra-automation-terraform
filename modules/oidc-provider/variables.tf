@@ -1,7 +1,7 @@
 variable "github_org" {
   description = "GitHub organization name"
   type        = string
-  default     = ""
+  default     = "tarak8535-ptl"
 }
 
 variable "github_repo" {
