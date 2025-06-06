@@ -2,7 +2,7 @@ aws_region      = "ap-south-1"
 resource_prefix = "ctrk-prod"
 
 # GitHub OIDC
-github_org  = "Rp-Github"
+github_org  = "tarak8535-ptl"
 github_repo = "multi-cloud-infra-automation-terraform"
 
 # VPC

@@ -2,6 +2,7 @@ resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/${var.resource_prefix}/vpc/flow-logs"
   retention_in_days = var.log_retention_days
   kms_key_id        = module.kms.key_id
+  tags              = var.tags
 }
 
 resource "aws_iam_role" "vpc_flow_logs" {
@@ -14,6 +15,7 @@ resource "aws_iam_role" "vpc_flow_logs" {
       Action    = "sts:AssumeRole"
     }]
   })
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy" "vpc_flow_logs" {
@@ -41,4 +43,5 @@ resource "aws_flow_log" "rejects" {
   iam_role_arn         = aws_iam_role.vpc_flow_logs.arn
   vpc_id               = module.vpc.vpc_id
   traffic_type         = "REJECT"
+  tags                 = var.tags
 }
